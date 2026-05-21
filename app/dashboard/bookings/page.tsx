@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Car, Van, Calendar, Star, MapPin, Navigation, User2, MessageSquare } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Car, Van, Calendar, Star, MapPin, Navigation, User2, MessageSquare, X, CheckCircle2, AlertTriangle, LocateFixed, Loader2, Info } from 'lucide-react';
 import Link from 'next/link';
 import ChatModal from '@/components/ChatModal';
 
@@ -73,8 +73,236 @@ function Badge({ status }: { status: Status }) {
   );
 }
 
+// ── View Details Modal ────────────────────────────────────
+function DetailsModal({ booking, onClose }: { booking: Booking; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md bg-background rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
+          <h3 className="font-serif font-bold text-foreground text-lg">Booking Details</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground/50 hover:text-foreground"><X size={16} /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          {[
+            { label: 'Vehicle',  value: `${booking.vehicle} (${booking.year})` },
+            { label: 'Provider', value: booking.provider },
+            { label: 'Dates',    value: booking.dates },
+            { label: 'Duration', value: booking.days },
+            { label: 'Total',    value: booking.total },
+            { label: 'Pickup',   value: booking.pickupMethod === 'meetup' ? 'Meet-up / Pick-up' : 'Provider Delivers' },
+            { label: 'Driver',   value: booking.withDriver === 'yes' ? 'With Driver' : 'Self-Drive' },
+            { label: 'Status',   value: statusStyle[booking.status].label },
+          ].map((r) => (
+            <div key={r.label} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <span className="text-xs text-foreground/40 uppercase tracking-widest">{r.label}</span>
+              <span className="text-sm font-semibold text-foreground">{r.value}</span>
+            </div>
+          ))}
+          <button onClick={onClose} className="w-full h-10 bg-primary text-white text-xs font-bold rounded-xl tracking-widest uppercase hover:bg-primary/90 transition-all mt-2">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Cancel Confirmation Modal ─────────────────────────────
+function CancelModal({ booking, onClose, onConfirm }: { booking: Booking; onClose: () => void; onConfirm: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const handle = async () => {
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 700));
+    setLoading(false);
+    onConfirm();
+  };
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-sm bg-background rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden">
+        <div className="p-6 text-center">
+          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle size={26} className="text-primary" />
+          </div>
+          <h3 className="font-serif font-bold text-foreground text-lg mb-1">Cancel Booking?</h3>
+          <p className="text-sm text-foreground/50 mb-1">{booking.vehicle}</p>
+          <p className="text-xs text-foreground/40 mb-6">{booking.dates} · {booking.days}</p>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 h-11 border border-border text-foreground/60 text-xs font-bold rounded-xl tracking-widest uppercase hover:border-foreground/30 transition-all">Keep It</button>
+            <button onClick={handle} disabled={loading} className="flex-1 h-11 bg-primary text-white text-xs font-bold rounded-xl tracking-widest uppercase hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+              {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Cancelling…</> : 'Yes, Cancel'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Leave Review Modal ────────────────────────────────────
+function ReviewModal({ booking, onClose }: { booking: Booking; onClose: () => void }) {
+  const [rating, setRating]   = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading]     = useState(false);
+
+  const handle = async () => {
+    if (!rating) return;
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setLoading(false);
+    setSubmitted(true);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md bg-background rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
+          <div>
+            <h3 className="font-serif font-bold text-foreground text-lg">Leave a Review</h3>
+            <p className="text-xs text-foreground/50 mt-0.5">{booking.provider}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground/50 hover:text-foreground"><X size={16} /></button>
+        </div>
+        <div className="p-5">
+          {submitted ? (
+            <div className="text-center py-6">
+              <div className="w-14 h-14 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 size={28} className="text-green-600" />
+              </div>
+              <p className="font-semibold text-foreground mb-1">Review Submitted!</p>
+              <p className="text-xs text-foreground/50 mb-5">Thanks for your feedback on {booking.vehicle}.</p>
+              <button onClick={onClose} className="w-full h-10 bg-primary text-white text-xs font-bold rounded-xl tracking-widest uppercase hover:bg-primary/90 transition-all">Done</button>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="p-3 bg-muted/50 rounded-xl border border-border text-xs text-foreground/60">
+                {booking.vehicle} · {booking.dates}
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-foreground/40 uppercase tracking-widest mb-3">Your Rating</p>
+                <div className="flex items-center justify-center gap-2">
+                  {[1,2,3,4,5].map((s) => (
+                    <button key={s} type="button"
+                      onMouseEnter={() => setHovered(s)}
+                      onMouseLeave={() => setHovered(0)}
+                      onClick={() => setRating(s)}
+                      className="transition-transform hover:scale-110 active:scale-95">
+                      <Star size={32} className={`transition-colors ${s <= (hovered || rating) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200 fill-gray-200'}`} />
+                    </button>
+                  ))}
+                </div>
+                {rating > 0 && (
+                  <p className="text-xs text-foreground/40 mt-2">
+                    {['','Poor','Fair','Good','Great','Excellent'][rating]}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground/50 uppercase tracking-widest">Comment (optional)</label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Share your experience…"
+                  rows={3}
+                  className="w-full px-3 py-3 border border-border rounded-xl text-sm bg-background focus:outline-none focus:border-primary transition-colors resize-none"
+                />
+              </div>
+              <button onClick={handle} disabled={!rating || loading}
+                className="w-full h-11 bg-primary text-white text-xs font-bold rounded-xl tracking-widest uppercase hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                {loading ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting…</> : 'Submit Review'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── GPS Tracking Modal ────────────────────────────────────
+function TrackingModal({ booking, onClose }: { booking: Booking; onClose: () => void }) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [locating, setLocating] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLocating(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (locating || !mapRef.current) return;
+    import('leaflet').then((L) => {
+      const el = mapRef.current as any;
+      if (!el || el._leaflet_id) return;
+      // @ts-ignore
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      });
+      const map = L.map(el, { center: [14.5995, 120.9842], zoom: 14, zoomControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+      // Mock vehicle location
+      const vehicleIcon = L.divIcon({
+        className: '',
+        html: `<div style="background:#dc2626;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(220,38,38,0.5)"></div>`,
+        iconSize: [14, 14], iconAnchor: [7, 7],
+      });
+      const marker = L.marker([14.5995, 120.9842], { icon: vehicleIcon }).addTo(map);
+      marker.bindPopup(`<b>${booking.vehicle}</b><br/><small>Live Location</small>`).openPopup();
+    });
+  }, [locating, booking.vehicle]);
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-lg bg-background rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ height: 'min(560px, 90dvh)' }}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <LocateFixed size={16} className="text-primary" />
+            </div>
+            <div>
+              <h3 className="font-serif font-bold text-foreground text-base">Track Vehicle</h3>
+              <p className="text-xs text-foreground/40 mt-0.5">{booking.vehicle} · {booking.dates}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground/50 hover:text-foreground"><X size={16} /></button>
+        </div>
+        <div className="flex-1 relative">
+          {locating ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <Loader2 size={28} className="text-primary animate-spin" />
+              <p className="text-sm text-foreground/50">Getting vehicle location…</p>
+            </div>
+          ) : (
+            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+          )}
+        </div>
+        <div className="shrink-0 px-5 py-3 border-t border-border bg-muted/30 flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+          <p className="text-xs text-foreground/60">Live tracking active · Updates every 30s</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BookingsPage() {
-  const [chatBooking, setChatBooking] = useState<Booking | null>(null);
+  const [chatBooking,   setChatBooking]   = useState<Booking | null>(null);
+  const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
+  const [cancelBooking, setCancelBooking] = useState<Booking | null>(null);
+  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
+  const [trackBooking,  setTrackBooking]  = useState<Booking | null>(null);
+  const [bookingList,   setBookingList]   = useState(bookings);
+
+  const handleCancel = (id: number) => {
+    setBookingList((prev) => prev.filter((b) => b.id !== id));
+    setCancelBooking(null);
+  };
 
   return (
     <main>
@@ -90,14 +318,11 @@ export default function BookingsPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-4">
 
-        {bookings.map((b) => {
+        {bookingList.map((b) => {
           const s   = statusStyle[b.status];
           const dim = b.status === 'completed';
           return (
-            <div
-              key={b.id}
-              className={`bg-card border border-border rounded-2xl overflow-hidden transition-opacity ${dim ? 'opacity-60 hover:opacity-80' : ''}`}
-            >
+            <div key={b.id} className={`bg-card border border-border rounded-2xl overflow-hidden transition-opacity ${dim ? 'opacity-60 hover:opacity-80' : ''}`}>
               <div className={`h-1 ${s.bar}`} />
               <div className="p-5 sm:p-6">
 
@@ -106,8 +331,8 @@ export default function BookingsPage() {
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${dim ? 'bg-muted' : 'bg-primary/10'}`}>
                       {b.vehicleIcon === 'car'
-                        ? <Car  size={22} className={dim ? 'text-foreground/40' : 'text-primary'} strokeWidth={1.5} />
-                        : <Van  size={22} className={dim ? 'text-foreground/40' : 'text-primary'} strokeWidth={1.5} />}
+                        ? <Car size={22} className={dim ? 'text-foreground/40' : 'text-primary'} strokeWidth={1.5} />
+                        : <Van size={22} className={dim ? 'text-foreground/40' : 'text-primary'} strokeWidth={1.5} />}
                     </div>
                     <div>
                       <p className="font-serif font-bold text-foreground tracking-wide">{b.vehicle}</p>
@@ -144,9 +369,7 @@ export default function BookingsPage() {
                 {/* Booking options */}
                 <div className="flex flex-wrap gap-2 mt-4 mb-1">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${dim ? 'bg-muted text-foreground/50' : 'bg-primary/10 text-primary'}`}>
-                    {b.pickupMethod === 'meetup'
-                      ? <><Navigation size={11} /> Meet-up / Pick-up</>
-                      : <><MapPin size={11} /> Provider Delivers</>}
+                    {b.pickupMethod === 'meetup' ? <><Navigation size={11} /> Meet-up / Pick-up</> : <><MapPin size={11} /> Provider Delivers</>}
                   </span>
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${dim ? 'bg-muted text-foreground/50' : 'bg-primary/10 text-primary'}`}>
                     <User2 size={11} /> {b.withDriver === 'yes' ? 'With Driver' : 'Self-Drive'}
@@ -157,34 +380,43 @@ export default function BookingsPage() {
                 <div className="flex flex-wrap gap-2 mt-4">
                   {b.status === 'confirmed' && (
                     <>
-                      <button className="h-10 px-5 bg-primary text-white text-xs font-semibold rounded-xl tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all">
-                        View Details
+                      <button onClick={() => setDetailBooking(b)}
+                        className="h-10 px-5 bg-primary text-white text-xs font-semibold rounded-xl tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-2">
+                        <Info size={13} /> View Details
                       </button>
-                      <button
-                        onClick={() => setChatBooking(b)}
-                        className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-primary/40 hover:text-primary active:scale-95 transition-all flex items-center gap-2"
-                      >
-                        <MessageSquare size={13} /> Message Provider
+                      <button onClick={() => setTrackBooking(b)}
+                        className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-primary/40 hover:text-primary active:scale-95 transition-all flex items-center gap-2">
+                        <LocateFixed size={13} /> Track Vehicle
                       </button>
-                      <button className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-foreground/30 hover:text-foreground active:scale-95 transition-all">
+                      <button onClick={() => setChatBooking(b)}
+                        className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-primary/40 hover:text-primary active:scale-95 transition-all flex items-center gap-2">
+                        <MessageSquare size={13} /> Message
+                      </button>
+                      <button onClick={() => setCancelBooking(b)}
+                        className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-red-400/40 hover:text-red-500 active:scale-95 transition-all">
                         Cancel
                       </button>
                     </>
                   )}
                   {b.status === 'completed' && (
                     <>
-                      <button
-                        onClick={() => setChatBooking(b)}
-                        className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-primary/40 hover:text-primary active:scale-95 transition-all flex items-center gap-2"
-                      >
-                        <MessageSquare size={13} /> View Messages
+                      <button onClick={() => setDetailBooking(b)}
+                        className="h-10 px-5 bg-primary text-white text-xs font-semibold rounded-xl tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-2">
+                        <Info size={13} /> View Details
                       </button>
-                      <button className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-foreground/30 hover:text-foreground active:scale-95 transition-all">
-                        Leave Review
+                      <button onClick={() => setChatBooking(b)}
+                        className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-primary/40 hover:text-primary active:scale-95 transition-all flex items-center gap-2">
+                        <MessageSquare size={13} /> Messages
                       </button>
-                      <button className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-foreground/30 hover:text-foreground active:scale-95 transition-all">
-                        Book Again
+                      <button onClick={() => setReviewBooking(b)}
+                        className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-yellow-400/40 hover:text-yellow-600 active:scale-95 transition-all flex items-center gap-2">
+                        <Star size={13} /> Leave Review
                       </button>
+                      <Link href="/dashboard">
+                        <button className="h-10 px-5 border border-border text-foreground/60 text-xs font-semibold rounded-xl tracking-widest uppercase hover:border-foreground/30 hover:text-foreground active:scale-95 transition-all">
+                          Book Again
+                        </button>
+                      </Link>
                     </>
                   )}
                 </div>
@@ -206,16 +438,12 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      {/* Chat modal */}
-      {chatBooking && (
-        <ChatModal
-          bookingId={chatBooking.id}
-          viewerRole="renter"
-          otherPartyName={chatBooking.provider}
-          context={`${chatBooking.vehicle} · ${chatBooking.dates}`}
-          onClose={() => setChatBooking(null)}
-        />
-      )}
+      {/* Modals */}
+      {chatBooking   && <ChatModal bookingId={chatBooking.id} viewerRole="renter" otherPartyName={chatBooking.provider} context={`${chatBooking.vehicle} · ${chatBooking.dates}`} onClose={() => setChatBooking(null)} />}
+      {detailBooking && <DetailsModal booking={detailBooking} onClose={() => setDetailBooking(null)} />}
+      {cancelBooking && <CancelModal  booking={cancelBooking} onClose={() => setCancelBooking(null)} onConfirm={() => handleCancel(cancelBooking.id)} />}
+      {reviewBooking && <ReviewModal  booking={reviewBooking} onClose={() => setReviewBooking(null)} />}
+      {trackBooking  && <TrackingModal booking={trackBooking} onClose={() => setTrackBooking(null)} />}
     </main>
   );
 }

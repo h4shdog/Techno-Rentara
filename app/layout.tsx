@@ -1,20 +1,13 @@
 import type { Metadata } from 'next'
-import { Poppins, Bebas_Neue } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/authContext'
 import './globals.css'
 import 'leaflet/dist/leaflet.css'
 
-const poppins = Poppins({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-poppins"
-});
-
-const bebas = Bebas_Neue({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-horizon"
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -46,8 +39,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`bg-background ${poppins.variable} ${bebas.variable}`}>
-      <body className="font-poppins antialiased">
+    <html lang="en" className={`bg-background ${inter.variable}`}>
+      <body className="font-sans antialiased">
         <AuthProvider>
           {children}
         </AuthProvider>

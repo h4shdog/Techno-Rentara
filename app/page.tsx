@@ -71,23 +71,15 @@ export default function AuthPage() {
 
         {/* ── Logo ── */}
         <div className="flex flex-col items-center mb-8">
-          {/* Brand lockup — logo + wordmark side by side */}
-          <div className="flex items-center mb-2">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/15 blur-xl scale-150" />
-              <Image
-                src="/logo-r.png"
-                alt="RenTara R"
-                width={56}
-                height={56}
-                className="relative h-14 w-auto drop-shadow-md"
-              />
-            </div>
-            <h1 className="text-4xl font-serif font-bold tracking-widest leading-none -ml-3 mt-1">
-              <span className="text-primary">en</span><span className="text-foreground">Tara</span>
-            </h1>
-          </div>
-          <p className="text-foreground/40 text-xs tracking-[0.18em] uppercase mt-1">
+          <Image
+            src="/Rentara,immg.jpg"
+            alt="RenTara"
+            width={360}
+            height={120}
+            className="h-24 w-auto object-contain mb-0 mt-4"
+            priority
+          />
+          <p className="text-foreground/40 text-xs tracking-[0.18em] uppercase -mt-3">
             Rent na! Ano, <span className="text-primary font-semibold">Tara?</span>
           </p>
         </div>
@@ -178,42 +170,7 @@ export default function AuthPage() {
                     : <><span>Sign In</span><ArrowRight size={13} /></>}
                 </button>
 
-                {/* Demo accounts */}
-                <div className="pt-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="flex-1 h-px bg-border/60" />
-                    <span className="text-xs text-foreground/30 tracking-widest uppercase">Try a demo</span>
-                    <div className="flex-1 h-px bg-border/60" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={fillRenter}
-                      className="group flex items-center gap-2.5 p-3 rounded-xl border border-border/60 hover:border-border hover:bg-muted/40 active:scale-[0.97] transition-all"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-secondary/8 border border-border/60 flex items-center justify-center shrink-0 group-hover:bg-secondary/15 transition-colors">
-                        <User size={14} className="text-foreground/50" strokeWidth={1.5} />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-xs font-bold text-foreground leading-none">Renter</p>
-                        <p className="text-xs text-foreground/35 mt-0.5">Find &amp; book</p>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={fillProvider}
-                      className="group flex items-center gap-2.5 p-3 rounded-xl border border-border/60 hover:border-primary/30 hover:bg-primary/5 active:scale-[0.97] transition-all"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-primary/8 border border-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                        <Car size={14} className="text-primary" strokeWidth={1.5} />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-xs font-bold text-foreground leading-none">Provider</p>
-                        <p className="text-xs text-foreground/35 mt-0.5">Manage fleet</p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
+
               </form>
             )}
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import VehicleIcon from '@/components/VehicleIcon';
-import { User, Mail, Calendar, Clock, X, MessageSquare, Navigation, User2, MapPin } from 'lucide-react';
+import { User, Mail, Calendar, Clock, X, MessageSquare, Navigation, User2, MapPin, Star } from 'lucide-react';
 import ChatModal from '@/components/ChatModal';
 
 type Status = 'pending' | 'confirmed' | 'completed' | 'declined' | 'cancelled';
@@ -30,12 +30,13 @@ interface Booking {
   cost: string;
   pickupMethod: PickupMethod;
   withDriver: DriverOption;
+  review?: { rating: number; comment: string };
 }
 
 const initialBookings: Booking[] = [
   { id: 1, status: 'pending',   renter: 'John Renter', email: 'john@email.com',  vehicle: 'Toyota Corolla', year: '2023', icon: 'car',   dates: 'May 25–28', days: '3 days', cost: '₱4,500', pickupMethod: 'meetup',   withDriver: 'no'  },
   { id: 2, status: 'confirmed', renter: 'Jane Doe',    email: 'jane@email.com',  vehicle: 'Ford Transit',   year: '2023', icon: 'van',   dates: 'May 22–24', days: '2 days', cost: '₱5,000', pickupMethod: 'delivery', withDriver: 'yes' },
-  { id: 3, status: 'completed', renter: 'Bob Smith',   email: 'bob@email.com',   vehicle: 'Isuzu Truck',    year: '2023', icon: 'truck', dates: 'May 10–12', days: '2 days', cost: '₱7,000', pickupMethod: 'meetup',   withDriver: 'no'  },
+  { id: 3, status: 'completed', renter: 'Bob Smith',   email: 'bob@email.com',   vehicle: 'Isuzu Truck',    year: '2023', icon: 'truck', dates: 'May 10–12', days: '2 days', cost: '₱7,000', pickupMethod: 'meetup',   withDriver: 'no',  review: { rating: 5, comment: 'Great truck, very clean and well-maintained!' } },
 ];
 
 // ── Details Modal ─────────────────────────────────────────
@@ -226,6 +227,21 @@ export default function ProviderBookingsPage() {
                       <User2 size={11} /> {b.withDriver === 'yes' ? 'With Driver' : 'Self-Drive'}
                     </span>
                   </div>
+
+                  {/* Review (completed bookings) */}
+                  {b.status === 'completed' && b.review && (
+                    <div className="mt-3 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-0.5">
+                          {[1,2,3,4,5].map((s) => (
+                            <Star key={s} size={12} className={s <= b.review!.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-200 fill-gray-200'} />
+                          ))}
+                        </div>
+                        <span className="text-xs font-semibold text-foreground/60">by {b.renter}</span>
+                      </div>
+                      <p className="text-xs text-foreground/60 italic">"{b.review.comment}"</p>
+                    </div>
+                  )}
                 </div>
               </div>
             );

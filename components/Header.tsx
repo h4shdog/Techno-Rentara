@@ -26,6 +26,7 @@ export default function Header() {
     : [
         { href: '/dashboard/provider', label: 'My Fleet' },
         { href: '/dashboard/provider/bookings', label: 'Bookings' },
+        { href: '/dashboard/provider/tracking', label: 'GPS Tracking' },
       ];
 
   return (
